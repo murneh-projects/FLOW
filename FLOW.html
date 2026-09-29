@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FLOW</title>
+<style>
+:root{--bg:#0c0c0e;--e:#141417;--s:#1b1b20;--fg:#eceae4;--mut:#9a9aa3;--sub:#6e6e76;--b:rgba(236,234,228,.12);--lb:#1a6b45;--lr:#4ade80;--rb:#1d4ed8;--rr:#7aa7ff;--wb:#5c5c64;--wr:#f4f4f5;--hb:#7f1d1d;--hr:#f07171}
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 "Segoe UI",system-ui,sans-serif}button,input,select{font:inherit;color:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:default}select,input{background:var(--s);border:1px solid var(--b);border-radius:8px}#app{height:100%;display:flex;flex-direction:column}header,.tape-bar,aside{background:var(--e);border-color:var(--b)}header{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--b)}h1{font-size:18px;margin:0 8px 0 0}.sub{color:var(--sub);font-size:12px}.btn{height:36px;min-width:36px;padding:0 10px;border-radius:8px;border:1px solid transparent;background:var(--fg);color:var(--bg)}.btn.ghost{background:transparent;color:var(--mut)}.btn.ghost:hover{background:var(--s);color:var(--fg)}.btn.sec{background:var(--s);color:var(--fg);border-color:var(--b)}.status{margin-left:auto;font:11px/1 ui-monospace,monospace;color:var(--sub);text-transform:uppercase;letter-spacing:.12em}.tape-bar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--b)}.tape-bar span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub)}#tape{display:flex;gap:4px;overflow-x:auto;flex:1}.cell{width:36px;height:36px;border-radius:4px;border:1px solid var(--b);background:var(--s);color:var(--mut);font:14px ui-monospace,monospace;position:relative;flex:0 0 auto}.cell.on{background:var(--fg);color:var(--bg);border-color:rgba(236,234,228,.22)}.cell.head{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--fg)}.body{display:flex;flex:1;min-height:0}aside{width:160px;padding:12px;border-right:1px solid var(--b);display:flex;flex-direction:column;gap:6px}aside p{margin:0 0 6px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sub)}.tool{display:flex;align-items:center;gap:8px;height:40px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--mut);text-align:left}.tool.active{background:var(--fg);color:var(--bg)}.tool svg{width:28px;height:28px}#stage{flex:1;position:relative;overflow:hidden;touch-action:none;background-image:radial-gradient(circle at 1px 1px,rgba(236,234,228,.1) 1px,transparent 0);background-size:22px 22px}#stage svg{position:absolute;inset:0;width:100%;height:100%}.empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--sub);pointer-events:none;text-align:center;padding:24px}.hint{font-size:11px;color:var(--sub);line-height:1.4;margin-top:10px}@media(max-width:700px){.body{flex-direction:column-reverse}aside{width:100%;flex-direction:row;overflow-x:auto;border-right:0;border-top:1px solid var(--b)}.hint,aside p{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+<h1>FLOW</h1><span class="sub">esolang</span>
+<button class="btn" id="play" title="Run">▶</button><button class="btn sec" id="step" title="Step">⏭</button><button class="btn ghost" id="reset" title="Reset">↺</button>
+<label class="sub">Speed <input type="range" id="speed" min="1" max="20" value="6"></label>
+<label class="sub">Len <input type="number" id="len" min="1" max="64" value="8" style="width:56px;height:36px;padding:0 8px"></label>
+<button class="btn ghost" id="zero">Zero</button><button class="btn ghost" id="rand">Random</button>
+<button class="btn sec" id="saveFile">Save</button><button class="btn sec" id="loadFile">Load</button><input id="file" type="file" accept=".flow,.txt" hidden>
+<span class="status" id="status">idle · 0 steps</span><button class="btn ghost" id="clear">Clear</button>
+</header>
+<div class="tape-bar"><span>Tape</span><div id="tape"></div></div>
+<div class="body">
+<aside><p>Place</p>
+<button class="tool active" data-tool="select">Select</button>
+<button class="tool" data-tool="left"><svg viewBox="0 0 64 64"><rect x="8" y="8" width="48" height="48" rx="10" fill="#1a6b45"/><path d="M40 20L24 32L40 44" fill="none" stroke="#eceae4" stroke-width="3.5" stroke-linecap="round"/></svg>LEFT</button>
+<button class="tool" data-tool="right"><svg viewBox="0 0 64 64"><rect x="8" y="8" width="48" height="48" rx="10" fill="#1d4ed8"/><path d="M24 20L40 32L24 44" fill="none" stroke="#eceae4" stroke-width="3.5" stroke-linecap="round"/></svg>RIGHT</button>
+<button class="tool" data-tool="write"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" fill="#5c5c64"/><circle cx="32" cy="32" r="10" fill="none" stroke="#eceae4" stroke-width="2.5"/></svg>WRITE</button>
+<button class="tool" data-tool="halt"><svg viewBox="0 0 64 64"><polygon points="22,8 42,8 56,22 56,42 42,56 22,56 8,42 8,22" fill="#7f1d1d"/><text x="32" y="38" text-anchor="middle" fill="#eceae4" font-size="11" font-weight="700">STOP</text></svg>HALT</button>
+<p class="hint" id="hint">Click empty canvas to drop a node. Click two nodes to connect.</p></aside>
+<div id="stage"><svg id="svg"><defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#5a5a62"/></marker></defs><g id="world"></g></svg><div class="empty" id="empty">Pick LEFT, RIGHT, WRITE or HALT, then click the canvas.</div></div>
+</div></div>
+<script>
+const R=32,KEY="flow-html-v1";
+const uid=p=>p+"_"+Math.random().toString(36).slice(2,9);
+const fillOnes=()=>({startId:"w",nodes:[{id:"w",kind:"write",x:220,y:220},{id:"r",kind:"right",x:420,y:220},{id:"h",kind:"halt",x:620,y:220}],edges:[{id:"e1",from:"w",to:"r",cond:"1"},{id:"e2",from:"r",to:"w",cond:"0"},{id:"e3",from:"r",to:"h",cond:"1"}]});
+const invert=()=>({startId:"w",nodes:[{id:"w",kind:"write",x:280,y:240},{id:"h",kind:"halt",x:480,y:240}],edges:[{id:"e1",from:"w",to:"h",cond:"default"}]});
+let S={graph:fillOnes(),seed:Array(8).fill(0),machine:null,playing:false,speed:6,tool:"select",pending:null,selected:null,cam:{x:40,y:40,z:1}};
+S.machine=fresh(S.seed,S.graph.startId);
+
+try{const raw=localStorage.getItem(KEY);if(raw){const d=JSON.parse(raw);if(d.graph)S.graph=d.graph;if(d.seed)S.seed=d.seed;if(d.speed)S.speed=d.speed;if(d.cam)S.cam=d.cam;S.machine=fresh(S.seed,S.graph.startId)}}catch(e){}
+
+function saveLocal(){localStorage.setItem(KEY,JSON.stringify({graph:S.graph,seed:S.seed,speed:S.speed,cam:S.cam}))}
+function fresh(tape,startId){return{tape:tape.slice(),head:0,nodeId:startId,halted:false,stuck:false,steps:0}}
+function canAdd(from,cond){return!S.graph.edges.some(e=>e.from===from&&e.cond===cond)}
+function nextCond(from){return["default","0","1"].find(c=>canAdd(from,c))||null}
+function cycleCond(id){const e=S.graph.edges.find(e=>e.id===id);if(!e)return;const o=["default","0","1"],i=o.indexOf(e.cond);for(let k=1;k<=3;k++){const c=o[(i+k)%3];if(c===e.cond||canAdd(e.from,c)){e.cond=c;return}}}
+function pickEdge(from,bit){const o=S.graph.edges.filter(e=>e.from===from);return o.find(e=>e.cond===String(bit))||o.find(e=>e.cond==="default")||null}
+function stepOnce(){const m=S.machine,g=S.graph;if(m.halted||m.stuck||!m.nodeId){m.halted=m.halted||!m.nodeId;return}const n=g.nodes.find(n=>n.id===m.nodeId);if(!n){m.stuck=true;return}const tape=m.tape.slice(),len=tape.length;let head=m.head;if(n.kind==="halt"){m.halted=true;m.steps++;return}if(n.kind==="left")head=(head-1+len)%len;else if(n.kind==="right")head=(head+1)%len;else if(n.kind==="write")tape[head]^=1;const e=pickEdge(n.id,tape[head]);if(!e){Object.assign(m,{tape,head,stuck:true,steps:m.steps+1});return}const d=g.nodes.find(x=>x.id===e.to);Object.assign(m,{tape,head,nodeId:e.to,halted:!!d&&d.kind==="halt",stuck:false,steps:m.steps+1})}
+
+const stage=document.getElementById("stage"),world=document.getElementById("world"),tapeEl=document.getElementById("tape"),empty=document.getElementById("empty"),statusEl=document.getElementById("status"),playBtn=document.getElementById("play"),hint=document.getElementById("hint");
+let drag=null,cursor=null,acc=0,lastT=0;
+function nodeFill(k,run){if(k==="left")return run?"var(--lr)":"var(--lb)";if(k==="right")return run?"var(--rr)":"var(--rb)";if(k==="write")return run?"var(--wr)":"var(--wb)";return run?"var(--hr)":"var(--hb)"}
+function nodeInner(n,run){if(n.kind==="write")return`<circle r="22" fill="${nodeFill("write",run)}"/><circle r="10" fill="none" stroke="${run?"var(--bg)":"var(--fg)"}" stroke-width="2.5"/>`;if(n.kind==="halt")return`<polygon points="-10,-24 10,-24 24,-10 24,10 10,24 -10,24 -24,10 -24,-10" fill="${nodeFill("halt",run)}"/><text y="5" text-anchor="middle" fill="${run?"var(--bg)":"var(--fg)"}" font-size="11" font-weight="700">STOP</text>`;const d=n.kind==="left"?"M8 -12L-8 0L8 12":"M-8 -12L8 0L-8 12";return`<rect x="-24" y="-24" width="48" height="48" rx="10" fill="${nodeFill(n.kind,run)}"/><path d="${d}" fill="none" stroke="${run?"var(--bg)":"var(--fg)"}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`}
+function render(){const{graph:g,machine:m,cam}=S;world.setAttribute("transform",`translate(${cam.x} ${cam.y}) scale(${cam.z})`);stage.style.backgroundSize=22*cam.z+"px "+22*cam.z+"px";stage.style.backgroundPosition=cam.x+"px "+cam.y+"px";let h="";for(const e of g.edges){const a=g.nodes.find(n=>n.id===e.from),b=g.nodes.find(n=>n.id===e.to);if(!a||!b)continue;const dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1,ux=dx/l,uy=dy/l,nx=-uy,ny=ux,bow=28,sx=a.x+ux*R,sy=a.y+uy*R,ex=b.x-ux*R,ey=b.y-uy*R,mx=(sx+ex)/2+nx*bow,my=(sy+ey)/2+ny*bow,d=`M${sx} ${sy}Q${mx} ${my} ${ex} ${ey}`,lx=(sx+2*mx+ex)/4,ly=(sy+2*my+ey)/4,lab=e.cond==="default"?"DEF":e.cond;h+=`<g data-edge="${e.id}" style="cursor:pointer"><path d="${d}" fill="none" stroke="transparent" stroke-width="18"/><path d="${d}" fill="none" stroke="#5a5a62" stroke-width="2" marker-end="url(#arr)"/><g transform="translate(${lx} ${ly})"><rect x="-16" y="-10" width="32" height="20" rx="6" fill="var(--e)" stroke="var(--b)"/><text y="4" text-anchor="middle" fill="var(--fg)" font-size="9" font-weight="600">${lab}</text></g></g>`}if(S.pending&&cursor){const p=g.nodes.find(n=>n.id===S.pending);if(p)h+=`<line x1="${p.x}" y1="${p.y}" x2="${cursor.x}" y2="${cursor.y}" stroke="var(--mut)" stroke-dasharray="6 5" stroke-width="1.5"/>`}for(const n of g.nodes){const run=m.nodeId===n.id&&!m.halted,ring=S.selected===n.id?"var(--fg)":S.pending===n.id?"var(--lr)":"transparent";h+=`<g data-node="${n.id}" transform="translate(${n.x} ${n.y})" style="cursor:grab"><circle r="30" fill="transparent" stroke="${ring}" stroke-width="2"/>${nodeInner(n,run)}${g.startId===n.id?`<text y="-34" text-anchor="middle" fill="var(--fg)" font-size="9" font-weight="700">START</text>`:""}</g>`}world.innerHTML=h;empty.hidden=g.nodes.length>0;tapeEl.innerHTML=(m.tape.length?m.tape:S.seed).map((b,i)=>`<button class="cell${b?" on":""}${m.head===i?" head":""}" data-i="${i}" ${S.playing?"disabled":""}>${b}</button>`).join("");statusEl.textContent=(m.halted?"halted":m.stuck?"stuck":S.playing?"running":"idle")+" · "+m.steps+" steps";playBtn.textContent=S.playing?"❚❚":"▶";hint.textContent=S.pending?"Click another node to wire a connection.":"Click empty canvas to drop a node. Click two nodes to connect.";document.getElementById("len").value=S.seed.length;document.getElementById("speed").value=S.speed;saveLocal()}
+function worldPt(e){const r=stage.getBoundingClientRect();return{x:(e.clientX-r.left-S.cam.x)/S.cam.z,y:(e.clientY-r.top-S.cam.y)/S.cam.z}}
+function hit(el,a){while(el&&el!==stage){if(el.getAttribute&&el.getAttribute(a))return el.getAttribute(a);el=el.parentNode}return null}
+
+/* FLOW FILE FORMAT
+nodes;edges;tape
+node = X Y TYPE ID, with X/Y rounded to 1 decimal
+type = 0 LEFT, 1 RIGHT, 2 WRITE, 3 HALT
+first node = START
+edge = FROM TO CONDITION
+condition = 0 DEF, 1 zero, 2 one
+tape = LENGTH DECIMAL_VALUE, leftmost bit is the least-significant bit
+Coordinates are serialized at 1x: savedX = node.x * zoom + cameraX,
+savedY = node.y * zoom + cameraY. Loading uses zoom 1 and camera (0,0).
+*/
+function num1(n){return Number(n.toFixed(1)).toString()}
+const typeToNum={left:0,right:1,write:2,halt:3},numToType=["left","right","write","halt"];
+const condToNum={default:0,"0":1,"1":2},numToCond=["default","0","1"];
+function tapeValue(bits){let v=0;for(let i=0;i<bits.length;i++)if(bits[i])v+=2**i;return v}
+function bitsFromValue(len,v){const a=[];for(let i=0;i<len;i++)a.push(Math.floor(v/2**i)%2);return a}
+function serializeFlow(){const g=S.graph,cam=S.cam,z=cam.z;const start=g.nodes.find(n=>n.id===g.startId);const ordered=(start?[start]:[]).concat(g.nodes.filter(n=>n.id!==g.startId));const saveIds=new Map(ordered.map((n,i)=>[n.id,i]));const nodes=ordered.map(n=>`${num1(n.x*z+cam.x)} ${num1(n.y*z+cam.y)} ${typeToNum[n.kind]} ${saveIds.get(n.id)}`).join(" ");const edges=g.edges.map(e=>`${saveIds.get(e.from)} ${saveIds.get(e.to)} ${condToNum[e.cond]}`).join(" ");const len=S.seed.length;return`${nodes};${edges};${len} ${tapeValue(S.seed)}`}
+function parseFlow(raw){const parts=raw.trim().split(";");if(parts.length!==3)throw Error("FLOW file needs 3 sections.");const nt=parts[0].trim().split(/\s+/).filter(Boolean),et=parts[1].trim().split(/\s+/).filter(Boolean),tt=parts[2].trim().split(/\s+/).filter(Boolean);if(nt.length%4)throw Error("Invalid node section.");const nodes=[];for(let i=0;i<nt.length;i+=4){const x=Number(nt[i]),y=Number(nt[i+1]),t=Number(nt[i+2]),id=nt[i+3];if(!Number.isFinite(x)||!Number.isFinite(y)||!numToType[t]&&t!==0)throw Error("Invalid node.");nodes.push({id,kind:numToType[t],x,y})}if(et.length%3)throw Error("Invalid edge section.");const ids=new Set(nodes.map(n=>n.id)),edges=[];for(let i=0;i<et.length;i+=3){const from=et[i],to=et[i+1],c=Number(et[i+2]);if(!ids.has(from)||!ids.has(to)||!numToCond[c])throw Error("Invalid edge.");edges.push({id:uid("e"),from,to,cond:numToCond[c]})}const len=Number(tt[0]),value=Number(tt[1]);if(!Number.isInteger(len)||len<1||len>64||!Number.isInteger(value)||value<0||value>=2**len)throw Error("Invalid tape.");return{graph:{startId:nodes[0]?.id||null,nodes,edges},seed:bitsFromValue(len,value)}}
+function saveFile(){const blob=new Blob([serializeFlow()],{type:"text/plain"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="flow.flow";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+async function loadFile(e){const f=e.target.files[0];if(!f)return;try{const d=parseFlow(await f.text());S.graph=d.graph;S.seed=d.seed;S.cam={x:0,y:0,z:1};S.machine=fresh(S.seed,S.graph.startId);S.playing=false;S.pending=null;S.selected=null;render()}catch(err){alert("Could not load FLOW file:\\n"+err.message)}e.target.value=""}
+
+stage.addEventListener("wheel",e=>{e.preventDefault();const r=stage.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,f=e.deltaY<0?1.08:1/1.08,z=Math.max(.35,Math.min(2.4,S.cam.z*f)),wx=(mx-S.cam.x)/S.cam.z,wy=(my-S.cam.y)/S.cam.z;S.cam={z,x:mx-wx*z,y:my-wy*z};render()},{passive:false});
+stage.addEventListener("pointerdown",e=>{if(e.button===2)return;const nid=hit(e.target,"data-node"),eid=hit(e.target,"data-edge");if(eid){cycleCond(eid);render();return}if(nid){stage.setPointerCapture(e.pointerId);drag={kind:"node",id:nid,x:e.clientX,y:e.clientY,moved:false};return}stage.setPointerCapture(e.pointerId);drag={kind:"pan",x:e.clientX,y:e.clientY,cx:S.cam.x,cy:S.cam.y}});
+stage.addEventListener("pointermove",e=>{cursor=worldPt(e);if(!drag){if(S.pending)render();return}if(drag.kind==="pan"){S.cam.x=drag.cx+e.clientX-drag.x;S.cam.y=drag.cy+e.clientY-drag.y;render()}else{if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>5)drag.moved=true;if(drag.moved){const p=worldPt(e),n=S.graph.nodes.find(n=>n.id===drag.id);if(n){n.x=p.x;n.y=p.y;render()}}}});
+stage.addEventListener("pointerup",e=>{const d=drag;drag=null;if(d&&d.kind==="node"&&!d.moved){if(!S.pending)S.pending=d.id,S.selected=d.id;else if(S.pending===d.id)S.pending=null;else{const c=nextCond(S.pending);if(c)S.graph.edges.push({id:uid("e"),from:S.pending,to:d.id,cond:c});S.pending=null;S.selected=d.id}render();return}if(d&&d.kind==="pan"&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<4){if(S.tool!=="select"){const p=worldPt(e),id=uid("n");S.graph.nodes.push({id,kind:S.tool,x:p.x,y:p.y});if(!S.graph.startId)S.graph.startId=id;S.tool="select";S.selected=id;S.pending=null;document.querySelectorAll(".tool").forEach(t=>t.classList.toggle("active",t.dataset.tool==="select"))}else{S.pending=null;S.selected=null}render()}});
+stage.addEventListener("contextmenu",e=>{e.preventDefault();const nid=hit(e.target,"data-node"),eid=hit(e.target,"data-edge");if(nid){S.graph.nodes=S.graph.nodes.filter(n=>n.id!==nid);S.graph.edges=S.graph.edges.filter(x=>x.from!==nid&&x.to!==nid);if(S.graph.startId===nid)S.graph.startId=S.graph.nodes[0]?.id||null;if(S.pending===nid)S.pending=null;if(S.selected===nid)S.selected=null;render()}else if(eid){S.graph.edges=S.graph.edges.filter(x=>x.id!==eid);render()}});
+stage.addEventListener("dblclick",e=>{const nid=hit(e.target,"data-node");if(nid){S.graph.startId=nid;S.machine=fresh(S.seed,nid);S.playing=false;render()}});
+tapeEl.addEventListener("click",e=>{const i=e.target.dataset.i;if(i==null||S.playing)return;S.seed[i]^=1;S.machine=fresh(S.seed,S.graph.startId);render()});
+document.querySelectorAll(".tool").forEach(t=>t.addEventListener("click",()=>{S.tool=t.dataset.tool;S.pending=null;document.querySelectorAll(".tool").forEach(x=>x.classList.toggle("active",x===t));render()}));
+function resetM(){S.machine=fresh(S.seed,S.graph.startId);S.playing=false;render()}
+playBtn.onclick=()=>{if(S.playing){S.playing=false;render();return}if(S.machine.halted||S.machine.stuck||!S.graph.startId)S.machine=fresh(S.seed,S.graph.startId);S.playing=!!S.graph.startId;lastT=0;acc=0;render()};
+document.getElementById("step").onclick=()=>{stepOnce();S.playing=false;render()};document.getElementById("reset").onclick=resetM;
+document.getElementById("speed").oninput=e=>S.speed=+e.target.value;
+document.getElementById("len").onchange=e=>{const n=Math.max(1,Math.min(64,+e.target.value||8));S.seed=Array(n).fill(0);resetM()};
+document.getElementById("zero").onclick=()=>{S.seed=S.seed.map(()=>0);resetM()};
+document.getElementById("rand").onclick=()=>{S.seed=S.seed.map(()=>Math.random()<.5?0:1);resetM()};
+document.getElementById("clear").onclick=()=>{S.graph={nodes:[],edges:[],startId:null};resetM()};
+document.getElementById("saveFile").onclick=saveFile;document.getElementById("loadFile").onclick=()=>document.getElementById("file").click();document.getElementById("file").onchange=loadFile;
+window.addEventListener("keydown",e=>{if(e.key==="Escape"){S.pending=null;render()}if((e.key==="Delete"||e.key==="Backspace")&&S.selected&&!/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){const id=S.selected;S.graph.nodes=S.graph.nodes.filter(n=>n.id!==id);S.graph.edges=S.graph.edges.filter(x=>x.from!==id&&x.to!==id);if(S.graph.startId===id)S.graph.startId=S.graph.nodes[0]?.id||null;S.selected=null;render()}});
+function tick(t){requestAnimationFrame(tick);if(!S.playing){lastT=t;acc=0;return}const dt=Math.min(.1,(t-lastT)/1000);lastT=t;acc+=dt*S.speed;let g=0;while(acc>=1&&g<8){acc--;g++;stepOnce();if(S.machine.halted||S.machine.stuck){S.playing=false;acc=0;break}}if(g)render()}
+requestAnimationFrame(tick);render();
+</script>
+</body>
+</html>
